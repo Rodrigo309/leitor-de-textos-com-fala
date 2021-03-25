@@ -38,61 +38,68 @@ const setVoice = event => {
 	utterance.voice = selectedVoice
 }
 
-const createExpressionBox = ({ img, text }) => {
-	const div = document.createElement('div')
+const addExpressionBoxesIntoDOM = () => {
+	main.innerHTML = humanExpressions.map(({ img, text }) =>
+	 `<div class="expression-box" data-js="${text}">
+		<img src="${img}" alt="${text}" data-js="${text}">
+		<p class="info" data-js="${text}">${text}</p>
+	 </div>
+`).join('')
 
-	div.classList.add('expression-box')
-	div.innerHTML = ` 
-		<img src="${img}" alt="${text}">
-		<p class="info">${text}</p>
-	`
 
-	div.addEventListener('click', () => {
-		setTextMessage(text)
-		speakText()
+}
 
+addExpressionBoxesIntoDOM()
+
+const setStyleOfClickedDiv = dataValue => {
+	const div = document.querySelector(`[data-js="${dataValue}"]`)
 		div.classList.add('active')
+
 		setTimeout(() => {
 			div.classList.remove('active')
 		}, 1000)
-	})
-
-
-	main.appendChild(div)
 }
 
-humanExpressions.forEach(createExpressionBox)
+main.addEventListener('click', event => {
+	const clickedElement = event.target 
+	const clickedElementText = clickedElement.dataset.js
+	const clickedElementTextMustBeSoken = ['IMG', 'P'].some(elementName => 
+		clickedElement.tagName.toLowerCase() === elementName.toLowerCase())
+
+	if(clickedElementTextMustBeSoken){
+		setTextMessage(clickedElementText)
+		speakText()
+		setStyleOfClickedDiv(clickedElementText)
+	}
+})
+
+const insertOptionsElementsIntoDOM = voices => {
+	selectElement.innerHTML = voices.reduce((accumulator, { name, lang }) => {
+		accumulator += `<option value="${name}">${lang} | ${name}</option>`
+		return accumulator
+	}, '')
+}
+
+const setPTBRvoices = voices => {
+	const mozVoice = voices.find(voice => 
+		voice.name === 'Portuguese_(Brazil)')
+
+
+	utterance.voice = mozVoice		
+	const mozOptionsElement = selectElement
+		.querySelector(`[value="${mozVoice.name}"]`)
+		 mozOptionsElement.selected = true
+}
 
 let voices = []
 
 //Gambiarra
 const getVoices = () => {
 	voices = speechSynthesis.getVoices()
-	const mozVoice = voices.find(voice => 
-		voice.name === 'Portuguese_(Brazil)')
-	const otVoice  = voices.find(voice => 
-		voice.name === 'urn:moz-tts:speechd:Portuguese_(Brazil)?pt-BR')
 
+	insertOptionsElementsIntoDOM(voices)
 
-
-	voices.forEach(({ name, lang }) => {
-		const option = document.createElement('option')
-
-		option.value = name
-
-
-		if(mozVoice && option.value === mozVoice.name){
-			utterance.voice = mozVoice
-			option.selected = true
-		}else if(otVoice && option.value === otVoice.name){
-			utterance.voice = otVoice
-			option.selected = true
-		}
-
-
-		option.textContent = `${lang} | ${name}`
-		selectElement.appendChild(option)
-	})
+	setPTBRvoices(voices)
 }
 	
 buttonInsertText.addEventListener('click', () => {
